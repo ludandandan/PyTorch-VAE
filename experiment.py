@@ -104,7 +104,8 @@ class VAEXperiment(pl.LightningModule):
                 optimizer2 = optim.Adam(getattr(self.model,self.params['submodel']).parameters(),
                                         lr=self.params['LR_2'])
                 optims.append(optimizer2)
-        except:
+        except Exception as e:
+            print(f"optimizers exception: {e}")
             pass
 
         try:
@@ -119,8 +120,10 @@ class VAEXperiment(pl.LightningModule):
                         scheduler2 = optim.lr_scheduler.ExponentialLR(optims[1],
                                                                       gamma = self.params['scheduler_gamma_2'])
                         scheds.append(scheduler2)
-                except:
+                except Exception as e:
+                    print(f"optimizers exception: {e}")
                     pass
+                print(optims, scheds)
                 return optims, scheds
         except:
             return optims

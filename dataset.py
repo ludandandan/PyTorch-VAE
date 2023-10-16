@@ -125,10 +125,10 @@ class VAEDataset(LightningDataModule):
 #         )
         
 #       =========================  CelebA Dataset  =========================
-    
-        train_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                              transforms.CenterCrop(148),
-                                              transforms.Resize(self.patch_size),
+    # 定义数据预处理管道
+        train_transforms = transforms.Compose([transforms.RandomHorizontalFlip(), # 随机水平翻转
+                                              transforms.CenterCrop(148), # 从中心裁剪边长为148的正方形
+                                              transforms.Resize(self.patch_size), # resize成64x64
                                               transforms.ToTensor(),])
         
         val_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
@@ -136,10 +136,10 @@ class VAEDataset(LightningDataModule):
                                             transforms.Resize(self.patch_size),
                                             transforms.ToTensor(),])
         
-        self.train_dataset = MyCelebA(
+        self.train_dataset = MyCelebA( # 继承自torchvision自己的类CelebA
             self.data_dir,
-            split='train',
-            transform=train_transforms,
+            split='train', # 根据./data/celeba/list_eval_partition.txt将所有图像划分为train(标号0),valid（标号1）,test（标号2）
+            transform=train_transforms, # 使用上面定义的train_transforms预处理管道对训练数据进行预处理
             download=False,
         )
         

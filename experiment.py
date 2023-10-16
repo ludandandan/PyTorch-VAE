@@ -19,8 +19,8 @@ class VAEXperiment(pl.LightningModule):
                  params: dict) -> None:
         super(VAEXperiment, self).__init__()
 
-        self.model = vae_model
-        self.params = params
+        self.model = vae_model #VanillaVAE
+        self.params = params#LR: 0.005,weight_decay: 0.0,scheduler_gamma: 0.95,kld_weight: 0.00025,manual_seed: 1265
         self.curr_device = None
         self.hold_graph = False
         try:
@@ -46,7 +46,7 @@ class VAEXperiment(pl.LightningModule):
         return train_loss['loss']
 
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
-        real_img, labels = batch
+        real_img, labels = batch # 64x3x64x63,64x40
         self.curr_device = real_img.device
 
         results = self.forward(real_img, labels = labels)
@@ -55,7 +55,7 @@ class VAEXperiment(pl.LightningModule):
                                             optimizer_idx = optimizer_idx,
                                             batch_idx = batch_idx)
 
-        self.log_dict({f"val_{key}": val.item() for key, val in val_loss.items()}, sync_dist=True)
+        self.log_dict({f"val_{key}": val.item() for key, val in val_loss.items()}, sync_dist=True) # 从使用val_loss字典中提取每个键值对，然后创建新的字典传给log_dict，每个键都是以val_开头，使用val.item()把pytorch张量转化为python中的标量值
 
         
     def on_validation_end(self) -> None:
@@ -63,12 +63,12 @@ class VAEXperiment(pl.LightningModule):
         
     def sample_images(self):
         # Get sample reconstruction image            
-        test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader()))
+        test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader())) # test_input.shape:144，3，64，64,test_label:144,40
         test_input = test_input.to(self.curr_device)
         test_label = test_label.to(self.curr_device)
 
 #         test_input, test_label = batch
-        recons = self.model.generate(test_input, labels = test_label)
+        recons = self.model.generate(test_input, labels = test_label) # 使用训练数据样本经过编码-解码获得重建的图像放到Reconstructions里面，获得解码之后的图像 144x3x64x64
         vutils.save_image(recons.data,
                           os.path.join(self.logger.log_dir , 
                                        "Reconstructions", 
@@ -77,7 +77,7 @@ class VAEXperiment(pl.LightningModule):
                           nrow=12)
 
         try:
-            samples = self.model.sample(144,
+            samples = self.model.sample(144, # 使用从标准正态分布中随机采样的样本144x128，经过解码获得图像，放到Samples里面
                                         self.curr_device,
                                         labels = test_label)
             vutils.save_image(samples.cpu().data,
@@ -89,7 +89,7 @@ class VAEXperiment(pl.LightningModule):
         except Warning:
             pass
 
-    def configure_optimizers(self):
+    def configure_optimizers(self): # 这个方法是LightningModule类必须实现的，用于配置和返回优化器，在这里定义用于模型训练的优化器和可选的学习率调度器
 
         optims = []
         scheds = []

@@ -16,17 +16,17 @@ class ConditionalVAE(BaseVAE):
                  **kwargs) -> None:
         super(ConditionalVAE, self).__init__()
 
-        self.latent_dim = latent_dim
-        self.img_size = img_size
+        self.latent_dim = latent_dim # 128
+        self.img_size = img_size # 64
 
-        self.embed_class = nn.Linear(num_classes, img_size * img_size)
-        self.embed_data = nn.Conv2d(in_channels, in_channels, kernel_size=1)
+        self.embed_class = nn.Linear(num_classes, img_size * img_size) # 40->64*64=4096
+        self.embed_data = nn.Conv2d(in_channels, in_channels, kernel_size=1) # 3->3
 
         modules = []
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256, 512]
 
-        in_channels += 1 # To account for the extra label channel
+        in_channels += 1 # To account for the extra label channel # in_channels=4
         # Build Encoder
         for h_dim in hidden_dims:
             modules.append(
@@ -39,14 +39,14 @@ class ConditionalVAE(BaseVAE):
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1]*4, latent_dim)
+        self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)#2048->128
+        self.fc_var = nn.Linear(hidden_dims[-1]*4, latent_dim)#2048->128
 
 
         # Build Decoder
         modules = []
 
-        self.decoder_input = nn.Linear(latent_dim + num_classes, hidden_dims[-1] * 4)
+        self.decoder_input = nn.Linear(latent_dim + num_classes, hidden_dims[-1] * 4)# 128+40=168->2048
 
         hidden_dims.reverse()
 
@@ -117,9 +117,9 @@ class ConditionalVAE(BaseVAE):
         return eps * std + mu
 
     def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
-        y = kwargs['labels'].float()
-        embedded_class = self.embed_class(y)
-        embedded_class = embedded_class.view(-1, self.img_size, self.img_size).unsqueeze(1)
+        y = kwargs['labels'].float()#性别、年龄、发型、眼镜等40个属性标签
+        embedded_class = self.embed_class(y) # 64x40->64x4096
+        embedded_class = embedded_class.view(-1, self.img_size, self.img_size).unsqueeze(1)# 64x4096->64x1x64x64
         embedded_input = self.embed_data(input)
 
         x = torch.cat([embedded_input, embedded_class], dim = 1)
